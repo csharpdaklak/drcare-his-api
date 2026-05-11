@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Mr Tân test API — DrCare HIS</title>
+<style>
+:root{
+  --blue:#1a56db;--blue-d:#1343b5;--blue-l:#eff6ff;--blue-ll:#dbeafe;
+  --green:#16a34a;--green-l:#dcfce7;
+  --red:#dc2626;--red-l:#fee2e2;
+  --orange:#d97706;--orange-l:#fef3c7;
+  --purple:#7c3aed;--purple-l:#ede9fe;
+  --teal:#0ea5e9;--teal-l:#e0f2fe;
+  --bg:#f0f4ff;--surface:#fff;--surface2:#f8faff;
+  --border:#d1d9f0;--text:#1e293b;--text2:#64748b;--text3:#94a3b8;
+  --sidebar:260px;--header:52px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── HEADER ── */
+.header{height:var(--header);background:linear-gradient(135deg,#1a3a8f,#1a56db 60%,#0ea5e9);display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;box-shadow:0 2px 10px rgba(26,86,219,.25);}
+.header-logo{width:44px;height:44px;flex-shrink:0;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4));border-radius:50%;overflow:visible;}
+.header-info{flex:1;}
+.header-title{color:#fff;font-size:16px;font-weight:800;line-height:1.2;}
+.header-sub{color:rgba(255,255,255,.65);font-size:11px;}
+.token-pills{display:flex;gap:6px;align-items:center;}
+.tpill{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid transparent;cursor:pointer;transition:.15s;}
+.tpill.ok{background:rgba(22,163,74,.2);border-color:rgba(22,163,74,.4);color:#86efac;}
+.tpill.expired{background:rgba(220,38,38,.2);border-color:rgba(220,38,38,.4);color:#fca5a5;}
+.tpill.none{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.6);}
+.tpill .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+/* ── MAIN 3-COL ── */
+.main{display:flex;flex:1;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+.sidebar-top{padding:10px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.search-box{width:100%;padding:7px 10px 7px 30px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:9px center;}
+.search-box:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,219,.1);}
+.api-count{font-size:11px;color:var(--text3);text-align:center;margin-top:6px;}
+.tree{flex:1;overflow-y:auto;padding:6px 0;}
+
+/* FOLDER */
+.folder{user-select:none;}
+.folder-hd{display:flex;align-items:center;gap:6px;padding:7px 10px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text2);border-radius:0;transition:.12s;border-left:3px solid transparent;}
+.folder-hd:hover{background:var(--blue-l);color:var(--blue);}
+.folder-hd.open{color:var(--text);}
+.folder-hd .arr{font-size:10px;transition:.2s;margin-left:auto;opacity:.5;}
+.folder-hd.open .arr{transform:rotate(90deg);}
+.folder-body{display:none;padding-left:8px;}
+.folder-body.open{display:block;}
+
+/* SUB-FOLDER */
+.subfolder-hd{display:flex;align-items:center;gap:5px;padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;color:var(--text2);border-radius:6px;margin:1px 4px;transition:.12s;}
+.subfolder-hd:hover{background:var(--blue-l);color:var(--blue);}
+.subfolder-hd .arr{font-size:9px;transition:.2s;margin-left:auto;opacity:.4;}
+.subfolder-hd.open .arr{transform:rotate(90deg);}
+.subfolder-body{display:none;padding-left:8px;}
+.subfolder-body.open{display:block;}
+
+/* API ITEM */
+.api-item{display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;border-radius:6px;margin:1px 4px;transition:.12s;border-left:2px solid transparent;}
+.api-item:hover{background:var(--blue-l);}
+.api-item.active{background:var(--blue-l);border-left-color:var(--blue);}
+.api-item.active .api-name{color:var(--blue);font-weight:600;}
+.api-name{font-size:11.5px;color:var(--text);flex:1;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mbadge{flex-shrink:0;font-size:9px;font-weight:800;padding:2px 5px;border-radius:4px;min-width:34px;text-align:center;}
+.m-GET{background:var(--green-l);color:var(--green);}
+.m-POST{background:var(--blue-ll);color:var(--blue);}
+.m-PUT{background:var(--orange-l);color:var(--orange);}
+.m-DELETE{background:var(--red-l);color:var(--red);}
+
+/* ── REQUEST PANEL ── */
+.req-panel{flex:1;display:flex;flex-direction:column;border-right:1px solid var(--border);min-width:0;}
+.req-top{padding:12px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;}
+.req-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--text3);gap:8px;padding:40px;}
+.req-empty .ico{font-size:40px;}
+.req-content{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+
+.method-url-bar{display:flex;gap:8px;align-items:stretch;margin-bottom:10px;}
+.method-sel{padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-weight:700;color:var(--text);background:var(--surface);cursor:pointer;min-width:90px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px;}
+.method-sel:focus{outline:none;border-color:var(--blue);}
+.url-inp{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:'Cascadia Code','Consolas',monospace;color:var(--text);background:var(--surface);}
+.url-inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,219,.08);}
+.send-btn{padding:8px 18px;background:var(--green);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.15s;flex-shrink:0;}
+.send-btn:hover{background:#15803d;}
+.send-btn:disabled{background:#94a3b8;cursor:not-allowed;}
+
+.auth-bar{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:7px;border:1px solid var(--border);font-size:11px;}
+.auth-label{color:var(--text2);font-weight:600;}
+.auth-val{color:var(--green);font-family:monospace;font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.auth-val.missing{color:var(--red);}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1.5px solid var(--border);padding:0 12px;background:var(--surface);flex-shrink:0;}
+.tab{padding:8px 12px;font-size:11.5px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:.12s;border-radius:6px 6px 0 0;}
+.tab:hover{color:var(--blue);background:var(--blue-l);}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.tab-count{display:inline-block;background:var(--blue-ll);color:var(--blue);border-radius:10px;padding:0 5px;font-size:10px;margin-left:3px;}
+.tab-panel{display:none;flex:1;overflow:auto;padding:10px 12px;}
+.tab-panel.active{display:block;}
+
+/* PARAMS TABLE */
+.param-table{width:100%;border-collapse:collapse;}
+.param-table th{font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text2);text-align:left;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);}
+.param-table td{border:1px solid var(--border);padding:0;}
+.param-table td input{width:100%;padding:6px 8px;border:none;font-size:12px;font-family:inherit;color:var(--text);background:transparent;}
+.param-table td input:focus{outline:none;box-shadow:inset 0 0 0 2px var(--blue);}
+.param-table .del-btn{width:28px;text-align:center;padding:5px;background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;}
+.param-table .del-btn:hover{color:var(--red);}
+.add-row-btn{margin-top:6px;padding:5px 10px;background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;transition:.12s;}
+.add-row-btn:hover{background:var(--blue-l);color:var(--blue);border-color:var(--blue);}
+
+/* BODY EDITOR */
+.body-editor-wrap{position:relative;}
+.body-editor{width:100%;min-height:160px;padding:10px;border:1.5px solid var(--border);border-radius:7px;font-family:'Cascadia Code','Consolas',monospace;font-size:12px;line-height:1.6;color:var(--text);background:#f8faff;resize:vertical;}
+.body-editor:focus{outline:none;border-color:var(--blue);}
+.fmt-btn{position:absolute;top:6px;right:8px;padding:3px 8px;font-size:10px;font-weight:600;background:var(--blue-l);color:var(--blue);border:1px solid var(--blue-ll);border-radius:5px;cursor:pointer;}
+
+/* ── RESPONSE PANEL ── */
+.resp-panel{width:420px;flex-shrink:0;display:flex;flex-direction:column;background:var(--surface);}
+.resp-top{padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.resp-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);flex:1;}
+.resp-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--text3);gap:8px;padding:40px;text-align:center;}
+.resp-empty .ico{font-size:36px;}
+.resp-empty p{font-size:12px;line-height:1.5;}
+
+.resp-meta{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.status-badge{font-size:12px;font-weight:700;padding:3px 9px;border-radius:5px;}
+.s2xx{background:var(--green-l);color:var(--green);}
+.s4xx{background:var(--red-l);color:var(--red);}
+.s5xx{background:var(--red-l);color:var(--red);}
+.meta-chip{font-size:10.5px;color:var(--text2);background:var(--surface);border:1px solid var(--border);padding:3px 8px;border-radius:20px;}
+.meta-chip b{color:var(--text);}
+
+.resp-tabs-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+.json-viewer{background:#0f172a;color:#e2e8f0;padding:12px;font-family:'Cascadia Code','Consolas',monospace;font-size:11.5px;line-height:1.65;overflow:auto;flex:1;white-space:pre-wrap;word-break:break-all;}
+.jk{color:#93c5fd;}.js{color:#86efac;}.jn{color:#fda4af;}.jb{color:#fcd34d;}.jnull{color:#94a3b8;}
+
+/* EXAMPLE RESPONSES */
+.example-tabs{display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid var(--border);}
+.ex-tab{padding:4px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;transition:.12s;}
+.ex-tab.ok{background:var(--green-l);color:var(--green);}
+.ex-tab.fail{background:var(--red-l);color:var(--red);}
+.ex-tab.ok.active{background:var(--green);color:#fff;}
+.ex-tab.fail.active{background:var(--red);color:#fff;}
+.ex-tab.inactive{background:var(--surface2);color:var(--text3);cursor:not-allowed;}
+
+/* SPINNER */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* SCROLL */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px;}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:8px;font-size:12px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;max-width:300px;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.success{background:var(--green);color:#fff;}
+#toast.error{background:var(--red);color:#fff;}
+#toast.info{background:var(--blue);color:#fff;}
+
+/* ENV MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--surface);border-radius:14px;width:620px;max-width:96vw;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.25);}
+.modal-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#1a3a8f,#1a56db);}
+.modal-title{font-size:14px;font-weight:700;flex:1;color:#fff;}
+.modal-close{background:rgba(255,255,255,.15);border:none;font-size:16px;cursor:pointer;color:#fff;padding:2px 8px;border-radius:6px;line-height:1.4;}
+.modal-close:hover{background:rgba(255,255,255,.25);}
+.modal-body{padding:0;overflow-y:auto;flex:1;}
+.modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--surface2);}
+.btn{padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:.15s;}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue);}
+.btn-primary:hover{background:var(--blue-d);}
+.btn-secondary{background:var(--surface2);color:var(--text2);border-color:var(--border);}
+.btn-secondary:hover{background:var(--blue-l);color:var(--blue);border-color:var(--blue);}
+
+/* SERVER SECTION */
+.srv-section{border-bottom:1px solid var(--border);}
+.srv-header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface2);cursor:pointer;user-select:none;}
+.srv-header:hover{background:var(--blue-l);}
+.srv-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.srv-name{font-size:13px;font-weight:700;flex:1;}
+.srv-var{font-size:10px;color:var(--text3);font-family:monospace;}
+.srv-status{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;}
+.srv-status.ok{color:var(--green);}
+.srv-status.no{color:var(--text3);}
+.srv-status.exp{color:var(--orange);}
+.srv-body{padding:14px 16px;display:none;}
+.srv-body.open{display:block;}
+.srv-toggle-arr{font-size:10px;color:var(--text3);transition:.2s;}
+.srv-header.open .srv-toggle-arr{transform:rotate(90deg);}
+
+/* ENV FIELDS */
+.env-field{margin-bottom:12px;}
+.env-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;display:flex;align-items:center;gap:6px;}
+.env-inp{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:'Cascadia Code','Consolas',monospace;color:var(--text);background:var(--surface);}
+.env-inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,219,.08);}
+.login-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
+.login-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.env-inp-sm{width:100%;padding:7px 9px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:var(--surface);}
+.env-inp-sm:focus{outline:none;border-color:var(--blue);}
+.env-inp-sm::placeholder{color:var(--text3);}
+.login-btn{width:100%;padding:9px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s;margin-top:2px;}
+.login-btn:hover{background:var(--blue-d);}
+.login-btn:disabled{background:var(--text3);cursor:not-allowed;}
+.login-btn.green{background:var(--green);}
+.login-btn.green:hover{background:#15803d;}
+
+/* TOKEN DISPLAY BOX */
+.tok-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-top:8px;}
+.tok-box.has-token{border-color:#86efac;background:#f0fdf4;}
+.tok-box.no-token{border-color:var(--border);background:var(--surface2);}
+.tok-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.tok-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.tok-status-dot.ok{background:var(--green);box-shadow:0 0 5px rgba(22,163,74,.4);}
+.tok-status-dot.no,.tok-status-dot.none{background:var(--text3);}
+.tok-status-dot.exp{background:var(--orange);box-shadow:0 0 5px rgba(217,119,6,.4);}
+.tpill.exp{background:rgba(220,38,38,.2);border-color:rgba(220,38,38,.4);color:#fca5a5;}
+.tok-label{font-size:11px;font-weight:700;flex:1;}
+.tok-countdown{font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;}
+.tok-countdown.ok{background:var(--green-l);color:var(--green);}
+.tok-countdown.exp{background:var(--orange-l);color:var(--orange);}
+.tok-countdown.done{background:var(--red-l);color:var(--red);}
+.tok-value{font-family:monospace;font-size:10px;color:var(--text2);word-break:break-all;line-height:1.4;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:5px 8px;max-height:44px;overflow:hidden;position:relative;}
+.tok-actions{display:flex;gap:6px;margin-top:8px;}
+.tok-btn{padding:4px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;border:1px solid;transition:.12s;}
+.tok-btn.copy{background:var(--blue-l);color:var(--blue);border-color:var(--blue-ll);}
+.tok-btn.copy:hover{background:var(--blue);color:#fff;}
+.tok-btn.del{background:var(--red-l);color:var(--red);border-color:#fca5a5;}
+.tok-btn.del:hover{background:var(--red);color:#fff;}
+.tok-btn.show{background:var(--surface2);color:var(--text2);border-color:var(--border);}
+.tok-btn.show:hover{background:var(--blue-l);color:var(--blue);}
+.tok-empty-msg{font-size:11px;color:var(--text3);padding:4px 0;}
+
+/* API_KEY section */
+.apikey-inp-wrap{position:relative;}
+.apikey-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;color:var(--text3);}
+
+/* SPINNER small */
+.spin-sm{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;}
+
+/* hidden search highlight */
+.api-item.hidden{display:none;}
+.folder.all-hidden>.folder-hd{display:none;}
+
+/* copy button in viewer */
+.json-copy{position:sticky;top:4px;float:right;margin:-4px -4px 0 0;padding:3px 8px;background:rgba(255,255,255,.1);color:#94a3b8;border:1px solid rgba(255,255,255,.15);border-radius:5px;font-size:10px;cursor:pointer;}
+.json-copy:hover{background:rgba(255,255,255,.2);color:#fff;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <!-- Logo TTYT Khu Vuc Krong No -->
+  <div class="header-logo">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" width="44" height="44">
+      <defs>
+        <path id="kn-arc-top" d="M 11,100 A 89,89 0 0,1 189,100"/>
+        <path id="kn-arc-bot" d="M 22,100 A 78,78 0 0,0 178,100"/>
+      </defs>
+      <!-- Nen trang -->
+      <circle cx="100" cy="100" r="100" fill="white"/>
+      <!-- Vien xanh ngoai day -->
+      <circle cx="100" cy="100" r="97" fill="none" stroke="#1565c0" stroke-width="6"/>
+      <!-- Vong xanh trong 1 -->
+      <circle cx="100" cy="100" r="89" fill="none" stroke="#1565c0" stroke-width="2"/>
+      <!-- Vong xanh trong 2 -->
+      <circle cx="100" cy="100" r="83" fill="none" stroke="#1565c0" stroke-width="1.2"/>
+      <!-- Cham do trai -->
+      <circle cx="11" cy="100" r="4.5" fill="#d42020"/>
+      <!-- Cham do phai -->
+      <circle cx="189" cy="100" r="4.5" fill="#d42020"/>
+      <!-- Chu cong tren -->
+      <text font-family="Arial,Helvetica,sans-serif" font-size="10.5" font-weight="700" fill="#1565c0">
+        <textPath href="#kn-arc-top" startOffset="50%" text-anchor="middle" letter-spacing="0.6">TRUNG T&#x00C2;M Y T&#x1EBE; KHU V&#x1EF0;C KR&#x00D4;NG N&#x00D4;</textPath>
+      </text>
+      <!-- Chu cong duoi -->
+      <text font-family="Arial,Helvetica,sans-serif" font-size="9.5" font-weight="700" fill="#1565c0">
+        <textPath href="#kn-arc-bot" startOffset="50%" text-anchor="middle" letter-spacing="0.4">KRONG NO REGIONAL HEALTH CENTER</textPath>
+      </text>
+      <!-- Chu thap do - thanh doc -->
+      <rect x="83" y="30" width="34" height="140" rx="5" fill="#d42020"/>
+      <!-- Chu thap do - thanh ngang -->
+      <rect x="30" y="83" width="140" height="34" rx="5" fill="#d42020"/>
+      <!-- Chu K trang ben trai -->
+      <text x="67" y="120" text-anchor="middle"
+            font-family="'Arial Black',Arial,sans-serif"
+            font-size="62" font-weight="900" fill="white">K</text>
+      <!-- Chu N trang ben phai -->
+      <text x="133" y="120" text-anchor="middle"
+            font-family="'Arial Black',Arial,sans-serif"
+            font-size="62" font-weight="900" fill="white">N</text>
+    </svg>
+  </div>
+  <div class="header-info">
+    <div class="header-title">Mr Tân test API</div>
+    <div class="header-sub">DrCare ↔ HIS Integration · 33 APIs</div>
+  </div>
+  <div class="token-pills">
+    <div class="tpill none" id="pill-tokenHIS" onclick="openEnv()" title="tokenHIS — Click để cấu hình">
+      <div class="dot"></div>tokenHIS
+    </div>
+    <div class="tpill none" id="pill-token" onclick="openEnv()" title="token (DrCare) — Click để cấu hình">
+      <div class="dot"></div>token
+    </div>
+    <div class="tpill none" id="pill-apikey" onclick="openEnv()" title="API_KEY — Click để cấu hình">
+      <div class="dot"></div>API_KEY
+    </div>
+    <button class="btn btn-secondary" style="padding:4px 12px;font-size:11px;color:rgba(255,255,255,.8);background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);" onclick="openEnv()">⚙ Môi trường</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- ── SIDEBAR ── -->
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <input class="search-box" id="searchBox" placeholder="Tìm kiếm API..." oninput="filterAPIs(this.value)"/>
+      <div class="api-count" id="apiCount">33 APIs · 3 servers</div>
+    </div>
+    <div class="tree" id="apiTree"></div>
+  </div>
+
+  <!-- ── REQUEST PANEL ── -->
+  <div class="req-panel">
+
+    <div id="reqEmpty" class="req-empty">
+      <div class="ico">👈</div>
+      <p style="font-size:13px;font-weight:600;color:var(--text2);">Chọn một API từ danh sách bên trái</p>
+      <p style="font-size:12px;">Tất cả 33 API của DrCare HIS đã được nạp sẵn</p>
+    </div>
+
+    <div id="reqContent" class="req-content" style="display:none;">
+      <div class="req-top">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px;" id="reqBreadcrumb">—</div>
+        <div class="method-url-bar">
+          <select class="method-sel" id="methodSel">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="DELETE">DELETE</option>
+          </select>
+          <input class="url-inp" id="urlInp" type="text" placeholder="URL"/>
+          <button class="send-btn" id="sendBtn" onclick="sendRequest()">▶ Gửi</button>
+        </div>
+        <div class="auth-bar">
+          <span class="auth-label">🔐 Auth:</span>
+          <span class="auth-val" id="authDisplay">Chưa cấu hình</span>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('params')">Params <span class="tab-count" id="paramsCount">0</span></div>
+        <div class="tab" onclick="switchTab('body')">Body</div>
+        <div class="tab" onclick="switchTab('headers')">Headers</div>
+      </div>
+
+      <div class="tab-panel active" id="tab-params">
+        <table class="param-table">
+          <thead><tr><th style="width:35%">Tên tham số</th><th>Giá trị</th><th style="width:30px"></th></tr></thead>
+          <tbody id="paramsBody"></tbody>
+        </table>
+        <button class="add-row-btn" onclick="addParam()">+ Thêm param</button>
+      </div>
+      <div class="tab-panel" id="tab-body">
+        <div class="body-editor-wrap">
+          <textarea class="body-editor" id="bodyEditor" placeholder='{\n  "key": "value"\n}'></textarea>
+          <button class="fmt-btn" onclick="formatBody()">✨ Format</button>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-headers">
+        <table class="param-table">
+          <thead><tr><th style="width:35%">Header</th><th>Giá trị</th><th style="width:30px"></th></tr></thead>
+          <tbody id="headersBody">
+            <tr>
+              <td><input type="text" value="Content-Type"/></td>
+              <td><input type="text" value="application/json"/></td>
+              <td><button class="del-btn" onclick="this.closest('tr').remove()">✕</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <button class="add-row-btn" onclick="addHeader()">+ Thêm header</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RESPONSE PANEL ── -->
+  <div class="resp-panel">
+    <div class="resp-top">
+      <span class="resp-title">📥 Kết quả</span>
+      <button class="btn btn-secondary" style="padding:4px 9px;font-size:11px;" onclick="copyResp()">📋</button>
+      <button class="btn btn-secondary" style="padding:4px 9px;font-size:11px;" onclick="downloadResp()">⬇</button>
+    </div>
+
+    <div id="respEmpty" class="resp-empty">
+      <div class="ico">🔌</div>
+      <p>Nhấn <strong>▶ Gửi</strong> để gọi API</p>
+      <p>Kết quả sẽ hiện ở đây</p>
+    </div>
+
+    <div id="respContent" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="resp-meta" id="respMeta"></div>
+      <div class="resp-tabs-wrap">
+        <div class="tabs" style="padding:0 10px;background:var(--surface);">
+          <div class="tab active" onclick="switchRespTab('body')">Body</div>
+          <div class="tab" onclick="switchRespTab('example')">Ví dụ mẫu</div>
+          <div class="tab" onclick="switchRespTab('headers')">Headers</div>
+        </div>
+        <div class="tab-panel active" id="rtab-body" style="padding:0;flex:1;display:flex;flex-direction:column;">
+          <div class="json-viewer" id="respBody">
+            <button class="json-copy" onclick="copyResp()">copy</button>
+            <span id="respBodyText"></span>
+          </div>
+        </div>
+        <div class="tab-panel" id="rtab-example" style="padding:0;flex:1;display:flex;flex-direction:column;">
+          <div class="example-tabs" id="exampleTabs"></div>
+          <div class="json-viewer" id="exampleViewer"></div>
+        </div>
+        <div class="tab-panel" id="rtab-headers" style="padding:0;flex:1;display:flex;flex-direction:column;">
+          <div class="json-viewer" id="respHeaders"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ENV MODAL -->
+<div class="modal-bg" id="envModal" onclick="closeEnvOnBg(event)">
+  <div class="modal">
+    <div class="modal-hd">
+      <span style="font-size:18px;">⚙️</span>
+      <span class="modal-title">Cấu hình Môi trường (Environment)</span>
+      <button class="modal-close" onclick="closeEnv()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0;overflow-y:auto;max-height:72vh;">
+
+      <!-- ── Section 1: HIS Server ── -->
+      <div class="srv-section">
+        <div class="srv-header open" onclick="toggleSrv('his')">
+          <span style="font-size:16px;">🏥</span>
+          <span style="flex:1;font-weight:700;font-size:13px;">HIS Server <span style="font-size:10px;font-weight:400;color:var(--text3);">DrCare → HIS</span></span>
+          <span id="chev-his" style="font-size:14px;transition:.2s;">▾</span>
+        </div>
+        <div class="srv-body open" id="sbody-his">
+          <div class="env-field">
+            <label class="env-label">HIS_API_BASEURL</label>
+            <input class="env-inp" id="env-HIS_API_BASEURL" placeholder="http://his-server:8080"/>
+          </div>
+          <div class="login-grid">
+            <div class="env-field">
+              <label class="env-label">HOSPITALID</label>
+              <input class="env-inp" id="his-HOSPITALID" placeholder="Mã bệnh viện"/>
+            </div>
+            <div class="env-field">
+              <label class="env-label">USERNAME</label>
+              <input class="env-inp" id="his-USERNAME" placeholder="Tài khoản"/>
+            </div>
+            <div class="env-field">
+              <label class="env-label">PASSWORD</label>
+              <input class="env-inp" id="his-PASSWORD" type="password" placeholder="Mật khẩu"/>
+            </div>
+          </div>
+          <button class="login-btn" onclick="loginHIS()" id="btnLoginHIS">
+            <span id="loginHIS-spin" class="spin-sm" style="display:none;"></span>
+            🔑 Đăng nhập lấy tokenHIS
+          </button>
+          <div class="tok-box" id="tok-tokenHIS">
+            <div class="tok-row">
+              <span class="tok-status-dot none" id="dot-tokenHIS"></span>
+              <span style="font-weight:600;font-size:12px;flex:1;">tokenHIS</span>
+              <span class="tok-countdown" id="cd-tokenHIS"></span>
+              <div class="tok-actions">
+                <button class="tok-btn" onclick="copyToken('tokenHIS')" title="Copy">📋</button>
+                <button class="tok-btn" onclick="toggleToken('tokenHIS')" title="Hiện/ẩn">👁</button>
+                <button class="tok-btn" onclick="deleteToken('tokenHIS')" title="Xoá" style="color:var(--red);">🗑</button>
+              </div>
+            </div>
+            <div class="tok-value" id="val-tokenHIS"> Token His của đơn vị bạn</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section 2: DrCare Server ── -->
+      <div class="srv-section">
+        <div class="srv-header open" onclick="toggleSrv('drcare')">
+          <span style="font-size:16px;">🌐</span>
+          <span style="flex:1;font-weight:700;font-size:13px;">DrCare Server <span style="font-size:10px;font-weight:400;color:var(--text3);">HIS → DrCare</span></span>
+          <span id="chev-drcare" style="font-size:14px;transition:.2s;">▾</span>
+        </div>
+        <div class="srv-body open" id="sbody-drcare">
+          <div class="env-field">
+            <label class="env-label">BASE_URL</label>
+            <input class="env-inp" id="env-BASE_URL" placeholder="https://api.drcare.vn"/>
+          </div>
+          <div class="login-grid">
+            <div class="env-field">
+              <label class="env-label">USERNAME</label>
+              <input class="env-inp" id="dc-USERNAME" placeholder="Tài khoản"/>
+            </div>
+            <div class="env-field">
+              <label class="env-label">PASSWORD</label>
+              <input class="env-inp" id="dc-PASSWORD" type="password" placeholder="Mật khẩu"/>
+            </div>
+            <div class="env-field">
+              <label class="env-label">HOSPITALID</label>
+              <input class="env-inp" id="dc-HOSPITALID" placeholder="Mã bệnh viện"/>
+            </div>
+          </div>
+          <button class="login-btn green" onclick="loginDrCare()" id="btnLoginDC">
+            <span id="loginDC-spin" class="spin-sm" style="display:none;"></span>
+            🔐 Đăng nhập lấy token DrCare
+          </button>
+          <div class="tok-box" id="tok-token">
+            <div class="tok-row">
+              <span class="tok-status-dot none" id="dot-token"></span>
+              <span style="font-weight:600;font-size:12px;flex:1;">token (DrCare)</span>
+              <span class="tok-countdown" id="cd-token"></span>
+              <div class="tok-actions">
+                <button class="tok-btn" onclick="copyToken('token')" title="Copy">📋</button>
+                <button class="tok-btn" onclick="toggleToken('token')" title="Hiện/ẩn">👁</button>
+                <button class="tok-btn" onclick="deleteToken('token')" title="Xoá" style="color:var(--red);">🗑</button>
+              </div>
+            </div>
+            <div class="tok-value" id="val-token">Chưa có token · Nhấn Đăng nhập bên trên</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section 3: Patient / API_KEY ── -->
+      <div class="srv-section" style="border-bottom:none;">
+        <div class="srv-header open" onclick="toggleSrv('patient')">
+          <span style="font-size:16px;">🔬</span>
+          <span style="flex:1;font-weight:700;font-size:13px;">Tra cứu lịch sử <span style="font-size:10px;font-weight:400;color:var(--text3);">PATIENT_BASE_URL</span></span>
+          <span id="chev-patient" style="font-size:14px;transition:.2s;">▾</span>
+        </div>
+        <div class="srv-body open" id="sbody-patient">
+          <div class="env-field">
+            <label class="env-label">PATIENT_BASE_URL</label>
+            <input class="env-inp" id="env-PATIENT_BASE_URL" placeholder="https://patient.drcare.vn"/>
+          </div>
+          <div class="env-field">
+            <label class="env-label">API_KEY <span style="font-size:10px;color:var(--text3);">nhập thủ công</span></label>
+            <div class="apikey-inp-wrap">
+              <input class="env-inp" id="env-API_KEY" type="password" placeholder="Bearer token hoặc API Key"/>
+              <button class="apikey-eye" onclick="toggleApiKeyVis()">👁</button>
+            </div>
+          </div>
+          <div class="tok-box" id="tok-apikey">
+            <div class="tok-row">
+              <span class="tok-status-dot none" id="dot-apikey"></span>
+              <span style="font-weight:600;font-size:12px;flex:1;">API_KEY</span>
+              <div class="tok-actions">
+                <button class="tok-btn" onclick="copyToken('API_KEY')" title="Copy">📋</button>
+                <button class="tok-btn" onclick="deleteToken('API_KEY')" title="Xoá" style="color:var(--red);">🗑</button>
+              </div>
+            </div>
+            <div class="tok-value" id="val-apikey">Chưa có API Key</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeEnv()">✕ Đóng</button>
+      <button class="btn btn-primary" onclick="saveEnv()">💾 Lưu cấu hình</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════
+// POSTMAN COLLECTION DATA
+// ════════════════════════════════════════════════════
+const COLLECTION = [
+  {
+    folder: "I. API dùng chung",
+    icon: "🔑",
+    server: "mixed",
+    items: [
+      {
+        name: "1. API DrCare đăng nhập lấy token của HIS",
+        method: "POST",
+        path: "/api/gettoken",
+        server: "HIS_API_BASEURL",
+        auth: "none",
+        autoSave: "tokenHIS",
+        body: JSON.stringify({ HOSPITALID: "", USERNAME: "", PASSWORD: "" }, null, 2),
+        params: [],
+        examples: [
+          { name: "Thành công", body: '{"errorCode":"0","errorMessage":"Đăng nhập thành công.","result":{"access_token":"eyJhbGci...","token_type":"Bearer","expires_in":1800}}' }
+        ]
+      },
+      {
+        name: "2. API HIS Đăng nhập lấy token của DrCare",
+        method: "POST",
+        path: "/api/qldlk/v1.0.0/public/auth/gettoken",
+        server: "BASE_URL",
+        auth: "none",
+        autoSave: "token",
+        body: JSON.stringify({ USERNAME: "", PASSWORD: "", HOSPITALID: "" }, null, 2),
+        params: [],
+        examples: [
+          { name: "Thành công", body: '{"errorCode":0,"errorMessage":"Thành công.","result":{"access_token":"eyJhbGci...","token_type":"Bearer ","expires_in":604800000}}' }
+        ]
+      }
+    ]
+  },
+  {
+    folder: "II. Đăng ký khám tại CSYT",
+    icon: "🏥",
+    server: "mixed",
+    subfolders: [
+      {
+        name: "a) Luồng DrCare gọi HIS",
+        icon: "→",
+        items: [
+          {
+            name: "1. Tra cứu danh sách block giờ",
+            method: "GET",
+            path: "/api/tracuudanhsachblockgio",
+            server: "HIS_API_BASEURL",
+            auth: "tokenHIS",
+            body: "",
+            params: [
+              { key: "ngaykham", value: "20260508" },
+              { key: "maphongkham", value: "PKYC" },
+              { key: "mabacsy", value: "" }
+            ],
+            examples: [
+              { name: "Thành công", body: '{"errorCode":"0","result":[{"IDBLOCK":"201","THOIGIANKHAM":"07:00","STT":"1"},{"IDBLOCK":"202","THOIGIANKHAM":"07:10","STT":"2"},{"IDBLOCK":"230","THOIGIANKHAM":"11:50","STT":"30"}],"errorMessage":"Thành công."}' },
+              { name: "Thất bại", body: '{"errorCode":"1","result":"","errorMessage":"Không lấy được dữ liệu."}' }
+            ]
+          },
+          {
+            name: "2. Giữ chỗ block giờ",
+            method: "POST",
+            path: "/api/giuchoblockgio",
+            server: "HIS_API_BASEURL",
+            auth: "tokenHIS",
+            body: JSON.stringify({ MADANGKY: "22418401", NGAY_KHAM: "20260508", MA_PHONG_KHAM: "PKYC", BLOCK_ID: "230", GIU_CHO_DEN: "202605081230" }, null, 2),
+            params: [],
+            examples: [
+              { name: "Thành công", body: '{"errorCode":0,"errorMessage":"","result":{"STT":"30"}}' },
+              { name: "Thất bại", body: '{"errorCode":1,"errorMessage":"Suất khám này đã bị người khác giữ chỗ, vui lòng chọn suất khám khác","result":""}' }
+            ]
+          },
+          {
+            name: "3. Nhận dữ liệu đăng ký khám tại CSYT",
+            method: "POST",
+            path: "/api/dangkyhenkhamcsyt",
+            server: "HIS_API_BASEURL",
+            auth: "tokenHIS",
+            body: JSON.stringify({ MADANGKY: "22418401", MABN_HIS: "BVBD260504000000002", TENBENHNHAN: "ĐỒNG THANH TUẤN", NGAYSINH: "01/04/2026", DIACHI: "15, Phường Ba Đình, Hà Nội", DIENTHOAI: "0388869868", NGAYHEN: "08/05/2026 11:50:00", MAGIOITINH: "1", MAPHONGKHAM: "PKYC", IDBLOCK: "230", LOAIHENKHAM: "2", UUTIEN: "3" }, null, 2),
+            params: [],
+            examples: [
+              { name: "Thành công", body: '{"errorCode":0,"errorMessage":"","result":{"MADANGKY":"22418401","MA_BN":"BVBD260504000000002","MAHOSOBENHAN":"BA2605080006","MALUOTKHAM_HIS":"BA2605080006"}}' },
+              { name: "Thất bại", body: '{"errorCode":1,"errorMessage":"Mã đăng ký đã tồn tại trên hệ thống","result":""}' }
+            ]
+          },
+          {
+            name: "4. Liên kết tài khoản bệnh nhân",
+            method: "POST",
+            path: "/api/qlhk/lienkettk",
+            server: "HIS_API_BASEURL",
+            auth: "tokenHIS",
+            body: JSON.stringify({ mabenhnhan: "BVBD260504000000002", tklienket: "0388869868" }, null, 2),
+            params: [],
+            examples: [
+              { name: "Thất bại", body: '{"errorCode":"1","errorMessage":"Không lấy được dữ liệu bệnh nhân.","result":""}' }
+            ]
+          },
+          {
+            name: "5. Tra cứu bệnh nhân",
+            method: "POST",
+            path: "/api/qlhk/tracuu",
+            server: "HIS_API_BASEURL",
+            auth: "tokenHIS",
+            body: JSON.stringify({ FUNC: "tracuubenhnhan", NGAYSINH: "20020227", HOTEN: "PHAN VĂN DƯƠNG", GIOITINHID: 1 }, null, 2),
+            params: [],
+            examples: [
+              { name: "Thành công", body: '{"errorCode":"0","errorMessage":"Thành công.","result":[{"MABENHNHAN":"BVBD251112000000001","TENBENHNHAN":"PHAN VĂN DƯƠNG","GIOITINH":"Nam","NGAYSINH":"27/02/2002"}]}' },
+              { name: "Thất bại", body: '{"errorCode":"1","errorMessage":"Không lấy được dữ liệu.","result":""}' }
+            ]
+          },
+          {
+            name: "6. Huỷ lịch hẹn khám CSYT / tư vấn từ xa",
+            method: "POST",
+            path: "/api/huylichhen",
+            server: "HIS_API_BASEURL",
+            auth: "tokenHIS",
+            body: JSON.stringify({ MACSYT: "01009", MADANGKY: "22418401", DIENTHOAI: "0388869868" }, null, 2),
+            params: [],
+            examples: []
+          }
+        ]
+      },
+      {
+        name: "b) Luồng HIS gọi DrCare",
+        icon: "←",
+        items: [
+          {
+            name: "1. Tiếp nhận lịch hẹn tái khám từ HIS",
+            method: "POST",
+            path: "/api/qldlk/v1.3.0/tiepnhanlichkhamcsyt",
+            server: "BASE_URL",
+            auth: "token",
+            body: JSON.stringify({ MACOSOKHAM: "30011", MABENHNHAN: "BN00001325", TENBENHNHAN: "PHAN THÀNH THIÊM", NGAYSINH: "19/05/1962", GIOITINHID: "1", DIENTHOAI: "0912835927", NGAYGIOKHAM: "12/06/2026 07:00", MADVKHAM: "02.1898", MAPHONGKHAM: "K01.04", LOAIHENKHAM: "1", DOITUONGBENHNHAN: "1" }, null, 2),
+            params: [],
+            examples: [
+              { name: "Thành công", body: '{"errorCode":0,"errorMessage":"Thành công.","result":{"MADANGKY":"30011_BN00001325_123456"}}' }
+            ]
+          },
+          {
+            name: "2. Xác nhận bệnh nhân đã đến khám từ HIS",
+            method: "POST",
+            path: "/api/qldlk/v1.3.0/xacnhandenkhamcsyt",
+            server: "BASE_URL",
+            auth: "token",
+            body: JSON.stringify({ MACOSOKHAM: "30011", MADANGKY: "22418401", MABN_HIS: "BN00001325", MALUOTKHAM_HIS: "BA2605080006", NGAYGIOKHAM: "08/05/2026 07:00" }, null, 2),
+            params: [],
+            examples: [
+              { name: "Thành công", body: '{"errorCode":0,"errorMessage":"Thành công.","result":""}' }
+            ]
+          },
+          {
+            name: "3. Trả kết quả khám",
+            method: "POST",
+            path: "/api/qldlk/v1.0.0/traketquakham",
+            server: "BASE_URL",
+            auth: "token",
+            body: JSON.stringify({ MACOSOKHAM: "01009", MADANGKY: "22418401", CHANDOAN: "J00-Viêm mũi họng cấp tính", KETQUA: "Bệnh nhân khỏe, xuất viện", NGAYKETQUA: "08/05/2026" }, null, 2),
+            params: [],
+            examples: [
+              { name: "Thành công", body: '{"errorCode":0,"errorMessage":"Thành công.","result":""}' }
+            ]
+          },
+          {
+            name: "4. Trả kết quả khám (Notify v1.3.0)",
+            method: "POST",
+            path: "/api/qldlk/v1.3.0/notify/1",
+            server: "BASE_URL",
+            auth: "token",
+            body: JSON.stringify({ MACOSOKHAM: "01009", MADANGKY: "22418401", CHANDOAN: "J00-Viêm mũi họng cấp tính", KETQUA: "Khỏe, xuất viện" }, null, 2),
+            params: [],
+            examples: []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    folder: "III. Đăng ký khám tư vấn từ xa",
+    icon: "📡",
+    server: "BASE_URL",
+    items: [],
+    empty: true
+  },
+  {
+    folder: "IV. Tra cứu lịch sử khám",
+    icon: "🔍",
+    server: "PATIENT_BASE_URL",
+    items: [
+      { name: "1. Lịch sử khám của 1 bệnh nhân", method: "GET", path: "/dieutri/lsbenhnhan", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"tuNgay",value:"22/04/1993"},{key:"denNgay",value:"08/05/2026"},{key:"maCSYT",value:"01009"},{key:"maBN",value:"BVBD2602060083"},{key:"currentTime",value:"08052026084039"},{key:"checksum",value:"e27b04b0d9e54d330a13f745530215006a02406b0aaf5adc3a8afc954bae5ce0"}], examples:[{name:"Thành công",body:'{"errorCode":0,"errorMessage":"Thành công.","result":[{"HOSOBENHANID":1711191,"MAHOSOBENHAN":"BA2602060405","NGAYVAOVIEN":"06/02/2026 09:04:04","NGAYRAVIEN":"09/02/2026 13:00:00","VIENPHI":9245092,"LOAIKHAM":1,"DIEUTRI":"Nội trú"}]}'}] },
+      { name: "2. Lịch sử khám BN (phục vụ khảo sát)", method: "GET", path: "/dieutri/lsbenhnhanks", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"tuNgay",value:"22/04/1993"},{key:"denNgay",value:"08/05/2026"},{key:"maCSYT",value:"01009"},{key:"maBN",value:"BVBD2602060083"},{key:"currentTime",value:"08052026084039"},{key:"checksum",value:"e27b04b0d9e54d330a13f745530215006a02406b0aaf5adc3a8afc954bae5ce0"}], examples:[{name:"Thành công",body:'{"errorCode":0,"errorMessage":"Thành công.","result":[{"HOSOBENHANID":1711191,"MAHOSOBENHAN":"BA2602060405","NGAYVAOVIEN":"06/02/2026 09:04:04","LOAIKHAM":1,"DIEUTRI":"Nội trú","MATRANGTHAI":1}]}'}] },
+      { name: "3. Lịch sử bệnh án", method: "GET", path: "/dieutri/lsbenhan", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"hosobenhanid",value:"1711191"},{key:"currentTime",value:"08052026084107"},{key:"checksum",value:"dd966d92c4619072f16bbe77fece9a27672f4f452287929865d161ce9c22a740"}], examples:[{name:"Thành công",body:'{"errorCode":0,"errorMessage":"Thành công.","result":[{"MAHOSOBENHAN":"BA2602060405","KHOA":"KHOA KHÁM BỆNH 1","CHANDOAN":"D21.9-U lành mô liên kết","TRANGTHAI":"Kết thúc","SONGAY":3}]}'}] },
+      { name: "4. Thông tin KCB của 1 hồ sơ bệnh án", method: "GET", path: "/dieutri/lsbenhnhanks", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"tuNgay",value:"22/04/1993"},{key:"denNgay",value:"08/05/2026"},{key:"maCSYT",value:"01009"},{key:"maBN",value:"BVBD2602060083"},{key:"currentTime",value:"08052026084039"},{key:"checksum",value:"e27b04b0d9e54d330a13f745530215006a02406b0aaf5adc3a8afc954bae5ce0"}], examples:[] },
+      { name: "5. Dịch vụ kỹ thuật của 1 hồ sơ", method: "GET", path: "/dieutri/listdvkt", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"hosobenhanid",value:"1711191"},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "6. Kết quả xét nghiệm chi tiết", method: "GET", path: "/dieutri/ctketquaxetnghiem", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"phieuid",value:""},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "7. Kết quả CĐHA chi tiết", method: "GET", path: "/dieutri/ctketquacdha", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"phieuid",value:""},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "8. Đơn thuốc 1 hồ sơ bệnh án", method: "GET", path: "/dieutri/listdonthuoc", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"hosobenhanid",value:"1711191"},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "9. Chi tiết đơn thuốc / vật tư", method: "GET", path: "/dieutri/ctdonthuoc", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"donthuocid",value:""},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "10. Chi phí KCB tổng hợp bệnh án", method: "GET", path: "/chiphi/kcbBa", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"hosobenhanid",value:"1711191"},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "11. Chi phí KCB chi tiết bệnh án", method: "GET", path: "/chiphi/kcbchitietba", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"hosobenhanid",value:"1711191"},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "12. Danh sách CLS của 1 bệnh nhân", method: "GET", path: "/dieutri/listdvktBN", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"maBN",value:"BVBD2602060083"},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "13. Đơn thuốc / vật tư của 1 bệnh nhân", method: "GET", path: "/dieutri/listdonthuocBN", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"maBN",value:"BVBD2602060083"},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "14. Chi phí KCB của 1 bệnh nhân", method: "GET", path: "/chiphi/kcbthBN", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"maBN",value:"BVBD2602060083"},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "15. Chi tiết đơn thuốc / vật tư (v2)", method: "GET", path: "/dieutri/ctdonthuocv2", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:""},{key:"maCSYT",value:"01009"},{key:"donthuocid",value:""},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "16. DV kỹ thuật 1 mẫu bệnh phẩm (v2)", method: "GET", path: "/dieutri/listdvktv2", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:""},{key:"maCSYT",value:"01009"},{key:"mauId",value:""},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "17. Kết quả CĐHA của 1 hồ sơ bệnh án", method: "GET", path: "/dieutri/listketquacdha", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"hosobenhanid",value:"1711191"},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "18. Kết quả XN của 1 hồ sơ bệnh án", method: "GET", path: "/dieutri/listketquaxn", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"hosobenhanid",value:"1711191"},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "19. Tất cả đơn thuốc của 1 hồ sơ bệnh án", method: "GET", path: "/dieutri/listdonthuocBA", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"hosobenhanid",value:"1711191"},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "20. Đăng ký nhận kết quả CLS (CĐHA + XN)", method: "GET", path: "/dieutri/dknhanketquacls", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"hosobenhanid",value:"1711191"},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "21. Kết quả XN theo mã bệnh án", method: "GET", path: "/dieutri/dknhanketquacls", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"maBenhAn",value:""},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "22. Lấy file ký số", method: "GET", path: "/dieutri/getPhieuKySo", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"phieuid",value:""},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] },
+      { name: "23. Thông tin khám sức khoẻ", method: "GET", path: "/khamsuckhoe/lskhamsuckhoe", server: "PATIENT_BASE_URL", auth: "API_KEY", body: "", params: [{key:"phone",value:"0919443809"},{key:"maCSYT",value:"01009"},{key:"maBN",value:"BVBD2602060083"},{key:"currentTime",value:""},{key:"checksum",value:""}], examples:[] }
+    ]
+  },
+  {
+    folder: "V. Thanh toán không tiền mặt",
+    icon: "💳",
+    server: "BASE_URL",
+    items: [],
+    empty: true
+  }
+];
+
+// ════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════
+let env = JSON.parse(localStorage.getItem('drcare_env') || '{}');
+let tokens = JSON.parse(localStorage.getItem('drcare_tokens') || '{}');
+let currentApi = null;
+let lastRespRaw = '';
+let lastRespHeaders = {};
+
+// ════════════════════════════════════════════════════
+// BUILD TREE
+// ════════════════════════════════════════════════════
+function buildTree() {
+  const tree = document.getElementById('apiTree');
+  tree.innerHTML = '';
+  COLLECTION.forEach((section, si) => {
+    const folderEl = document.createElement('div');
+    folderEl.className = 'folder';
+    folderEl.dataset.si = si;
+
+    const hd = document.createElement('div');
+    hd.className = 'folder-hd open';
+    hd.innerHTML = `<span>${section.icon}</span><span>${section.folder}</span>${section.empty?'<span style="font-size:10px;color:var(--text3);margin-left:auto;">trống</span>':''}<span class="arr">▶</span>`;
+    hd.onclick = () => toggleFolder(hd);
+    folderEl.appendChild(hd);
+
+    const body = document.createElement('div');
+    body.className = 'folder-body open';
+
+    if (section.subfolders) {
+      section.subfolders.forEach((sf, sfi) => {
+        const sfHd = document.createElement('div');
+        sfHd.className = 'subfolder-hd open';
+        sfHd.innerHTML = `<span style="font-size:10px;">${sf.icon}</span><span>${sf.name}</span><span class="arr">▶</span>`;
+        sfHd.onclick = () => toggleSubfolder(sfHd);
+        body.appendChild(sfHd);
+
+        const sfBody = document.createElement('div');
+        sfBody.className = 'subfolder-body open';
+        sf.items.forEach((api, ai) => {
+          sfBody.appendChild(makeApiItem(api, [si, sfi, ai], `${section.folder} › ${sf.name}`));
+        });
+        body.appendChild(sfBody);
+      });
+    } else if (section.items) {
+      section.items.forEach((api, ai) => {
+        body.appendChild(makeApiItem(api, [si, ai], section.folder));
+      });
+    }
+
+    folderEl.appendChild(body);
+    tree.appendChild(folderEl);
+  });
+}
+
+function makeApiItem(api, idx, breadcrumb) {
+  const el = document.createElement('div');
+  el.className = 'api-item';
+  el.dataset.idx = JSON.stringify(idx);
+  el.dataset.name = api.name.toLowerCase();
+  el.dataset.breadcrumb = breadcrumb;
+  el.innerHTML = `<span class="mbadge m-${api.method}">${api.method}</span><span class="api-name" title="${api.name}">${api.name}</span>`;
+  el.onclick = () => selectApi(el, api, breadcrumb);
+  return el;
+}
+
+function toggleFolder(hd) {
+  hd.classList.toggle('open');
+  hd.nextElementSibling.classList.toggle('open');
+}
+function toggleSubfolder(hd) {
+  hd.classList.toggle('open');
+  hd.nextElementSibling.classList.toggle('open');
+}
+
+// ════════════════════════════════════════════════════
+// SELECT API
+// ════════════════════════════════════════════════════
+function selectApi(el, api, breadcrumb) {
+  document.querySelectorAll('.api-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  currentApi = api;
+
+  document.getElementById('reqEmpty').style.display = 'none';
+  document.getElementById('reqContent').style.display = 'flex';
+
+  document.getElementById('reqBreadcrumb').textContent = breadcrumb + ' › ' + api.name;
+  document.getElementById('methodSel').value = api.method;
+  document.getElementById('urlInp').value = resolveUrl(api);
+
+  // Auth display
+  updateAuthDisplay(api);
+
+  // Params
+  const paramsBody = document.getElementById('paramsBody');
+  paramsBody.innerHTML = '';
+  (api.params || []).forEach(p => addParamRow(p.key, p.value));
+  document.getElementById('paramsCount').textContent = (api.params || []).length;
+
+  // Body
+  document.getElementById('bodyEditor').value = api.body || '';
+  document.getElementById('bodyEditor').disabled = ['GET','DELETE'].includes(api.method);
+
+  // Switch to params if has params, body if has body
+  if (api.params && api.params.length > 0) switchTab('params');
+  else if (api.body) switchTab('body');
+
+  // Reset response area but keep structure
+  document.getElementById('respEmpty').style.display = '';
+  document.getElementById('respContent').style.display = 'none';
+
+  // Load examples
+  loadExamples(api);
+}
+
+function resolveUrl(api) {
+  const base = env[api.server] || ('{{' + api.server + '}}');
+  return base + api.path;
+}
+
+function updateAuthDisplay(api) {
+  const el = document.getElementById('authDisplay');
+  if (api.auth === 'none') {
+    el.textContent = 'Không cần token (public login API)';
+    el.className = 'auth-val';
+    return;
+  }
+  const tok = tokens[api.auth];
+  if (tok) {
+    el.textContent = `Bearer ${tok.substring(0,40)}...  ✓ (${api.auth})`;
+    el.className = 'auth-val';
+  } else {
+    el.textContent = `⚠ Chưa có ${api.auth} · Hãy login trước`;
+    el.className = 'auth-val missing';
+  }
+}
+
+// ════════════════════════════════════════════════════
+// SEND REQUEST
+// ════════════════════════════════════════════════════
+async function sendRequest() {
+  if (!currentApi) return;
+  const method = document.getElementById('methodSel').value;
+  let url = document.getElementById('urlInp').value.trim();
+
+  // Build query string from params table
+  const params = getTableData('paramsBody');
+  const qs = params.filter(p=>p.key).map(p=>`${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join('&');
+  if (qs) url += (url.includes('?') ? '&' : '?') + qs;
+
+  // Build headers
+  const headers = { 'Content-Type': 'application/json', ...getHeadersData() };
+  if (currentApi.auth !== 'none') {
+    const tok = tokens[currentApi.auth];
+    if (tok) headers['Authorization'] = 'Bearer ' + tok;
+  }
+
+  // Body
+  let body;
+  if (!['GET','DELETE'].includes(method)) {
+    const b = document.getElementById('bodyEditor').value.trim();
+    if (b) { try { JSON.parse(b); body = b; } catch { showToast('❌ Body JSON không hợp lệ!', 'error'); return; } }
+  }
+
+  const btn = document.getElementById('sendBtn');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+  const t0 = Date.now();
+
+  try {
+    const timeout = parseInt(localStorage.getItem('drcare_timeout') || '30') * 1000;
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), timeout);
+    const res = await fetch(url, { method, headers, body, signal: ctrl.signal });
+    clearTimeout(tid);
+    const elapsed = Date.now() - t0;
+    const raw = await res.text();
+    lastRespRaw = raw;
+    res.headers.forEach((v,k) => lastRespHeaders[k] = v);
+
+    // Auto-save token
+    if (currentApi.autoSave) {
+      try {
+        const j = JSON.parse(raw);
+        const tok = j?.result?.access_token;
+        if (tok) { tokens[currentApi.autoSave] = tok; saveTokens(); updateTokenPills(); updateAuthDisplay(currentApi); showToast(`✅ Đã lưu ${currentApi.autoSave}!`, 'success'); }
+      } catch {}
+    }
+
+    showResponse(res.status, elapsed, raw, Object.fromEntries(res.headers));
+    showToast(`✅ ${res.status} · ${elapsed}ms`, res.ok ? 'success' : 'error');
+  } catch(e) {
+    const elapsed = Date.now() - t0;
+    showResponseError(e.name === 'AbortError' ? '⏱ Timeout' : '❌ ' + e.message, elapsed);
+    showToast(e.name === 'AbortError' ? '⏱ Timeout!' : '❌ ' + e.message, 'error');
+  } finally {
+    btn.innerHTML = '▶ Gửi';
+    btn.disabled = false;
+  }
+}
+
+// ════════════════════════════════════════════════════
+// RESPONSE
+// ════════════════════════════════════════════════════
+function showResponse(status, elapsed, raw, hdrs) {
+  document.getElementById('respEmpty').style.display = 'none';
+  document.getElementById('respContent').style.display = 'flex';
+
+  const cls = status >= 200 && status < 300 ? 's2xx' : status >= 400 && status < 500 ? 's4xx' : 's5xx';
+  document.getElementById('respMeta').innerHTML =
+    `<span class="status-badge ${cls}">${status} ${statusText(status)}</span>
+     <span class="meta-chip"><b>${elapsed}</b> ms</span>
+     <span class="meta-chip"><b>${formatBytes(raw.length)}</b></span>`;
+
+  let pretty;
+  try { pretty = JSON.stringify(JSON.parse(raw), null, 2); } catch { pretty = raw; }
+  document.getElementById('respBodyText').innerHTML = syntaxHL(escHtml(pretty));
+  document.getElementById('respHeaders').innerHTML = syntaxHL(escHtml(JSON.stringify(hdrs, null, 2)));
+}
+
+function showResponseError(msg, elapsed) {
+  document.getElementById('respEmpty').style.display = 'none';
+  document.getElementById('respContent').style.display = 'flex';
+  document.getElementById('respMeta').innerHTML = `<span class="status-badge s5xx">ERROR</span><span class="meta-chip"><b>${elapsed}</b> ms</span>`;
+  document.getElementById('respBodyText').innerHTML = escHtml(msg);
+}
+
+function loadExamples(api) {
+  const tabs = document.getElementById('exampleTabs');
+  const viewer = document.getElementById('exampleViewer');
+  tabs.innerHTML = '';
+  viewer.innerHTML = '';
+  if (!api.examples || !api.examples.length) {
+    tabs.innerHTML = '<span style="font-size:11px;color:var(--text3);padding:4px 8px;">Không có ví dụ mẫu</span>';
+    return;
+  }
+  api.examples.forEach((ex, i) => {
+    const t = document.createElement('span');
+    const isOk = ex.name.toLowerCase().includes('thành công');
+    t.className = `ex-tab ${isOk ? 'ok' : 'fail'} ${i===0?'active':''}`;
+    t.textContent = ex.name;
+    t.onclick = () => {
+      document.querySelectorAll('.ex-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      let pretty; try { pretty = JSON.stringify(JSON.parse(ex.body), null, 2); } catch { pretty = ex.body; }
+      viewer.innerHTML = syntaxHL(escHtml(pretty));
+    };
+    tabs.appendChild(t);
+    if (i === 0) {
+      let pretty; try { pretty = JSON.stringify(JSON.parse(ex.body), null, 2); } catch { pretty = ex.body; }
+      viewer.innerHTML = syntaxHL(escHtml(pretty));
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════
+// SEARCH
+// ════════════════════════════════════════════════════
+function filterAPIs(q) {
+  q = q.toLowerCase().trim();
+  let visible = 0;
+  document.querySelectorAll('.api-item').forEach(el => {
+    const match = !q || el.dataset.name.includes(q);
+    el.classList.toggle('hidden', !match);
+    if (match) visible++;
+  });
+  document.getElementById('apiCount').textContent = q ? `${visible} kết quả cho "${q}"` : '33 APIs · 3 servers';
+  // Show/hide folders
+  document.querySelectorAll('.folder').forEach(f => {
+    const anyVisible = [...f.querySelectorAll('.api-item')].some(i => !i.classList.contains('hidden'));
+    f.style.display = anyVisible ? '' : 'none';
+  });
+}
+
+// ════════════════════════════════════════════════════
+// ENV & TOKENS
+// ════════════════════════════════════════════════════
+let tokenMask = { tokenHIS: true, token: true };
+let cdInterval = null;
+
+// ── Accordion toggle ──
+function toggleSrv(id) {
+  const body = document.getElementById('sbody-' + id);
+  const chev = document.getElementById('chev-' + id);
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if (chev) chev.textContent = isOpen ? '▸' : '▾';
+}
+
+// ── Open / Close modal ──
+function openEnv() {
+  ['HIS_API_BASEURL','BASE_URL','PATIENT_BASE_URL'].forEach(k => {
+    const inp = document.getElementById('env-' + k);
+    if (inp) inp.value = env[k] || '';
+  });
+  ['HOSPITALID','USERNAME','PASSWORD'].forEach(k => {
+    const el = document.getElementById('his-' + k);
+    if (el) el.value = env['his_' + k] || '';
+  });
+  ['USERNAME','PASSWORD','HOSPITALID'].forEach(k => {
+    const el = document.getElementById('dc-' + k);
+    if (el) el.value = env['dc_' + k] || '';
+  });
+  const akInp = document.getElementById('env-API_KEY');
+  if (akInp) akInp.value = tokens['API_KEY'] || '';
+  updateTokenDisplays();
+  startCountdown();
+  document.getElementById('envModal').classList.add('open');
+}
+
+function closeEnv() {
+  document.getElementById('envModal').classList.remove('open');
+  if (cdInterval) { clearInterval(cdInterval); cdInterval = null; }
+}
+function closeEnvOnBg(e) { if (e.target === document.getElementById('envModal')) closeEnv(); }
+
+// ── Save env ──
+function saveEnv() {
+  ['HIS_API_BASEURL','BASE_URL','PATIENT_BASE_URL'].forEach(k => {
+    const v = document.getElementById('env-' + k)?.value.trim();
+    if (v) env[k] = v; else delete env[k];
+  });
+  ['HOSPITALID','USERNAME','PASSWORD'].forEach(k => {
+    const v = document.getElementById('his-' + k)?.value.trim();
+    if (v) env['his_' + k] = v; else delete env['his_' + k];
+  });
+  ['USERNAME','PASSWORD','HOSPITALID'].forEach(k => {
+    const v = document.getElementById('dc-' + k)?.value.trim();
+    if (v) env['dc_' + k] = v; else delete env['dc_' + k];
+  });
+  const ak = document.getElementById('env-API_KEY')?.value.trim();
+  if (ak) tokens['API_KEY'] = ak; else delete tokens['API_KEY'];
+  localStorage.setItem('drcare_env', JSON.stringify(env));
+  saveTokens();
+  updateTokenPills();
+  updateTokenDisplays();
+  if (currentApi) document.getElementById('urlInp').value = resolveUrl(currentApi);
+  closeEnv();
+  showToast('✅ Đã lưu cấu hình!', 'success');
+}
+
+function saveTokens() { localStorage.setItem('drcare_tokens', JSON.stringify(tokens)); }
+
+// ── JWT helpers ──
+function decodeJwtExpiry(token) {
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(payload.replace(/-/g,'+').replace(/_/g,'/')));
+    if (decoded.exp) return decoded.exp * 1000;
+    return null;
+  } catch { return null; }
+}
+
+function getTokenStatus(key) {
+  if (!tokens[key]) return 'none';
+  if (key === 'API_KEY') return 'ok';
+  const exp = decodeJwtExpiry(tokens[key]);
+  if (!exp) return 'ok';
+  return Date.now() < exp ? 'ok' : 'exp';
+}
+
+function getTokenTimeLeft(key) {
+  if (!tokens[key] || key === 'API_KEY') return null;
+  const exp = decodeJwtExpiry(tokens[key]);
+  if (!exp) return null;
+  const left = exp - Date.now();
+  if (left <= 0) return -1;
+  const s = Math.floor(left / 1000);
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s/60) + 'm ' + (s%60) + 's';
+  return Math.floor(s/3600) + 'h ' + Math.floor((s%3600)/60) + 'm';
+}
+
+// ── Token display ──
+function updateTokenDisplays() {
+  renderTokBox('tokenHIS');
+  renderTokBox('token');
+  renderApiKeyBox();
+}
+
+function renderTokBox(key) {
+  const dotEl = document.getElementById('dot-' + key);
+  const cdEl  = document.getElementById('cd-' + key);
+  const valEl = document.getElementById('val-' + key);
+  const boxEl = document.getElementById('tok-' + key);
+  if (!dotEl) return;
+
+  const status = getTokenStatus(key);
+  dotEl.className = 'tok-status-dot ' + status;
+  if (boxEl) {
+    boxEl.classList.toggle('has-token', !!tokens[key]);
+    boxEl.classList.toggle('no-token', !tokens[key]);
+  }
+
+  const tl = getTokenTimeLeft(key);
+  if (tl === null)   { cdEl.textContent = ''; cdEl.className = 'tok-countdown'; }
+  else if (tl === -1){ cdEl.textContent = 'Hết hạn'; cdEl.className = 'tok-countdown done'; }
+  else {
+    cdEl.textContent = '⏱ ' + tl;
+    const noMin = tl.includes('s') && !tl.includes('m');
+    cdEl.className = 'tok-countdown ' + (noMin && parseInt(tl) < 120 ? 'exp' : 'ok');
+  }
+
+  if (tokens[key]) {
+    valEl.textContent = tokenMask[key]
+      ? tokens[key].substring(0,28) + ' ••••••••••••••••'
+      : tokens[key];
+    valEl.title = 'Click để copy token';
+    valEl.onclick = () => copyToken(key);
+    valEl.style.cursor = 'pointer';
+  } else {
+    valEl.textContent = 'Chưa có token · Nhấn Đăng nhập bên trên';
+    valEl.onclick = null;
+    valEl.style.cursor = 'default';
+  }
+}
+
+function renderApiKeyBox() {
+  const dotEl = document.getElementById('dot-apikey');
+  const valEl = document.getElementById('val-apikey');
+  const boxEl = document.getElementById('tok-apikey');
+  if (!dotEl) return;
+  const has = !!tokens['API_KEY'];
+  dotEl.className = 'tok-status-dot ' + (has ? 'ok' : 'none');
+  if (boxEl) { boxEl.classList.toggle('has-token', has); boxEl.classList.toggle('no-token', !has); }
+  valEl.textContent = has
+    ? tokens['API_KEY'].substring(0,28) + (tokens['API_KEY'].length > 28 ? ' •••' : '')
+    : 'Chưa có API Key';
+}
+
+// ── Token pills (header) ──
+function updateTokenPills() {
+  const pills = { 'pill-tokenHIS': 'tokenHIS', 'pill-token': 'token', 'pill-apikey': 'API_KEY' };
+  Object.entries(pills).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'tpill ' + getTokenStatus(key);
+  });
+}
+
+// ── Countdown timer ──
+function startCountdown() {
+  if (cdInterval) clearInterval(cdInterval);
+  cdInterval = setInterval(() => {
+    renderTokBox('tokenHIS');
+    renderTokBox('token');
+    updateTokenPills();
+  }, 1000);
+}
+
+// ── Token actions ──
+function copyToken(key) {
+  const val = tokens[key];
+  if (!val) return showToast('Chưa có token để copy!', 'error');
+  navigator.clipboard.writeText(val)
+    .then(() => showToast('✅ Đã copy ' + key + '!', 'success'))
+    .catch(() => showToast('❌ Không copy được!', 'error'));
+}
+
+function toggleToken(key) {
+  tokenMask[key] = !tokenMask[key];
+  renderTokBox(key);
+}
+
+function deleteToken(key) {
+  if (!tokens[key]) return showToast('Không có token để xoá!', 'error');
+  if (!confirm('Xoá token ' + key + '?')) return;
+  delete tokens[key];
+  saveTokens();
+  updateTokenDisplays();
+  updateTokenPills();
+  showToast('🗑 Đã xoá ' + key, 'info');
+}
+
+function toggleApiKeyVis() {
+  const inp = document.getElementById('env-API_KEY');
+  if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// ── Login: DrCare → HIS (lấy tokenHIS) ──
+async function loginHIS() {
+  const baseUrl = document.getElementById('env-HIS_API_BASEURL')?.value.trim() || env.HIS_API_BASEURL || '';
+  if (!baseUrl) return showToast('⚠ Chưa nhập HIS_API_BASEURL!', 'error');
+  const body = {
+    HOSPITALID: document.getElementById('his-HOSPITALID')?.value.trim() || '',
+    USERNAME:   document.getElementById('his-USERNAME')?.value.trim() || '',
+    PASSWORD:   document.getElementById('his-PASSWORD')?.value.trim() || ''
+  };
+  if (!body.USERNAME || !body.PASSWORD) return showToast('⚠ Nhập USERNAME và PASSWORD!', 'error');
+
+  const spin = document.getElementById('loginHIS-spin');
+  const btn  = document.getElementById('btnLoginHIS');
+  spin.style.display = 'inline-block'; btn.disabled = true;
+
+  try {
+    const res  = await fetch(baseUrl + '/api/gettoken', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    const tok  = data?.result?.access_token;
+    if (tok) {
+      tokens.tokenHIS = tok;
+      env.HIS_API_BASEURL = baseUrl;
+      if (body.HOSPITALID) env['his_HOSPITALID'] = body.HOSPITALID;
+      if (body.USERNAME)   env['his_USERNAME']   = body.USERNAME;
+      if (body.PASSWORD)   env['his_PASSWORD']   = body.PASSWORD;
+      localStorage.setItem('drcare_env', JSON.stringify(env));
+      saveTokens();
+      updateTokenDisplays();
+      updateTokenPills();
+      showToast('✅ Đăng nhập HIS thành công! tokenHIS đã lưu.', 'success');
+    } else {
+      showToast('❌ ' + (data?.errorMessage || 'Đăng nhập thất bại!'), 'error');
+    }
+  } catch(e) {
+    showToast('❌ Lỗi kết nối HIS: ' + e.message, 'error');
+  } finally {
+    spin.style.display = 'none'; btn.disabled = false;
+  }
+}
+
+// ── Login: HIS → DrCare (lấy token DrCare) ──
+async function loginDrCare() {
+  const baseUrl = document.getElementById('env-BASE_URL')?.value.trim() || env.BASE_URL || '';
+  if (!baseUrl) return showToast('⚠ Chưa nhập BASE_URL!', 'error');
+  const body = {
+    USERNAME:   document.getElementById('dc-USERNAME')?.value.trim() || '',
+    PASSWORD:   document.getElementById('dc-PASSWORD')?.value.trim() || '',
+    HOSPITALID: document.getElementById('dc-HOSPITALID')?.value.trim() || ''
+  };
+  if (!body.USERNAME || !body.PASSWORD) return showToast('⚠ Nhập USERNAME và PASSWORD!', 'error');
+
+  const spin = document.getElementById('loginDC-spin');
+  const btn  = document.getElementById('btnLoginDC');
+  spin.style.display = 'inline-block'; btn.disabled = true;
+
+  try {
+    const res  = await fetch(baseUrl + '/api/qldlk/v1.0.0/public/auth/gettoken', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    const tok  = data?.result?.access_token;
+    if (tok) {
+      tokens.token = tok;
+      env.BASE_URL = baseUrl;
+      if (body.USERNAME)   env['dc_USERNAME']   = body.USERNAME;
+      if (body.PASSWORD)   env['dc_PASSWORD']   = body.PASSWORD;
+      if (body.HOSPITALID) env['dc_HOSPITALID'] = body.HOSPITALID;
+      localStorage.setItem('drcare_env', JSON.stringify(env));
+      saveTokens();
+      updateTokenDisplays();
+      updateTokenPills();
+      showToast('✅ Đăng nhập DrCare thành công! token đã lưu.', 'success');
+    } else {
+      showToast('❌ ' + (data?.errorMessage || 'Đăng nhập thất bại!'), 'error');
+    }
+  } catch(e) {
+    showToast('❌ Lỗi kết nối DrCare: ' + e.message, 'error');
+  } finally {
+    spin.style.display = 'none'; btn.disabled = false;
+  }
+}
+
+// ════════════════════════════════════════════════════
+// TABLE HELPERS
+// ════════════════════════════════════════════════════
+function getTableData(tbodyId) {
+  return [...document.querySelectorAll('#' + tbodyId + ' tr')].map(tr => {
+    const inputs = tr.querySelectorAll('input');
+    return { key: inputs[0]?.value.trim() || '', value: inputs[1]?.value.trim() || '' };
+  }).filter(r => r.key);
+}
+function getHeadersData() {
+  const h = {};
+  document.querySelectorAll('#headersBody tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    const k = inputs[0]?.value.trim(); const v = inputs[1]?.value.trim();
+    if (k && v) h[k] = v;
+  });
+  return h;
+}
+function addParamRow(k='', v='') {
+  const tbody = document.getElementById('paramsBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><input type="text" value="${escAttr(k)}" placeholder="key"/></td><td><input type="text" value="${escAttr(v)}" placeholder="value"/></td><td><button class="del-btn" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+function addParam() { addParamRow(); }
+function addHeader() {
+  const tbody = document.getElementById('headersBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><input type="text" placeholder="Header"/></td><td><input type="text" placeholder="Value"/></td><td><button class="del-btn" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+function formatBody() {
+  const el = document.getElementById('bodyEditor');
+  try { el.value = JSON.stringify(JSON.parse(el.value), null, 2); showToast('✅ JSON đã được format!', 'info'); }
+  catch { showToast('❌ JSON không hợp lệ!', 'error'); }
+}
+
+// ════════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════════
+function switchTab(name) {
+  ['params','body','headers'].forEach(n => {
+    document.querySelectorAll('.tab')[['params','body','headers'].indexOf(n)]?.classList.toggle('active', n===name);
+    document.getElementById('tab-'+n)?.classList.toggle('active', n===name);
+  });
+}
+function switchRespTab(name) {
+  const names = ['body','example','headers'];
+  document.querySelectorAll('#respContent .tab').forEach((t,i) => t.classList.toggle('active', names[i]===name));
+  names.forEach(n => { const p = document.getElementById('rtab-'+n); if(p) p.classList.toggle('active', n===name); });
+}
+
+// ════════════════════════════════════════════════════
+// COPY / DOWNLOAD
+// ════════════════════════════════════════════════════
+function copyResp() { navigator.clipboard.writeText(lastRespRaw).then(() => showToast('📋 Đã sao chép!', 'info')); }
+function downloadResp() {
+  if (!lastRespRaw) { showToast('Chưa có kết quả!', 'error'); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lastRespRaw], {type:'application/json'}));
+  a.download = 'response_' + new Date().toISOString().slice(0,19).replace(/:/g,'-') + '.json';
+  a.click();
+}
+
+// ════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════
+function syntaxHL(html) {
+  return html.replace(/("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+    let c = 'jn';
+    if (/^"/.test(m)) c = /:$/.test(m) ? 'jk' : 'js';
+    else if (/true|false/.test(m)) c = 'jb';
+    else if (/null/.test(m)) c = 'jnull';
+    return `<span class="${c}">${m}</span>`;
+  });
+}
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s) { return String(s).replace(/"/g,'&quot;'); }
+function statusText(s) { return {200:'OK',201:'Created',400:'Bad Request',401:'Unauthorized',403:'Forbidden',404:'Not Found',500:'Server Error',503:'Unavailable'}[s]||''; }
+function formatBytes(b) { return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(2)+' MB'; }
+
+let toastTimer;
+function showToast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+buildTree();
+updateTokenPills();
+</script>
+</body>
+</html>
